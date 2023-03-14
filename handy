@@ -1,0 +1,3 @@
+cat << ENDCAT
+curl -sSL https://get.rvm.io -o files/rvm_install.sh
+ENDCAT

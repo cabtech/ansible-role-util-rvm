@@ -1,0 +1,52 @@
+---
+# --------------------------------
+
+- name: "Add GPG keys"
+  ansible.builtin.apt_key:
+    id: "{{ item }}"
+    keyserver: "{{ rvm_keyserver }}"
+    state: present
+    validate_certs: true
+  loop: "{{ rvm_gpg_keys }}"
+  become: true
+  tags: [ct-rvm]
+
+- name: "Copy installer over"
+  ansible.builtin.copy:
+    dest: /usr/local/bin/rvm_install.sh
+    group: root
+    mode: "0755"
+    owner: root
+    src: rvm_install.sh
+  become: true
+  tags: [ct-rvm]
+
+- name: "Add users"
+  ansible.builtin.user:
+    name: "{{ item }}"
+    shell: /bin/bash
+    groups: ["users"]
+  loop: "{{ rvm_users }}"
+  become: true
+  tags: [ct-rvm]
+
+- name: "Install RVM per user"
+  ansible.builtin.command: /usr/local/bin/rvm_install.sh stable
+  args:
+    creates: ~{{ item }}/.rvm
+  become: true
+  become_user: "{{ item }}"
+  loop: "{{ rvm_users }}"
+  tags: [ct-rvm]
+
+- name: "Install GPG keys per user"
+  ansible.builtin.command: gpg2 --keyserver hkp://{{ rvm_keyserver }} --recv-keys "{{ rvm_gpg_keys | join(' ') }}"
+  args:
+    creates: ~{{ item }}/.rvm
+  become: true
+  become_user: "{{ item }}"
+  loop: "{{ rvm_users }}"
+  tags: [ct-rvm]
+
+# --------------------------------
+...
